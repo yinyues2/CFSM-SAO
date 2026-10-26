@@ -416,6 +416,8 @@ function pickManagedThemeSettings(settings: ResolvedThemeSettings) {
     homepageDefaultPingTaskId: settings.homepageDefaultPingTaskId,
     enableHomepageMultiPing: settings.enableHomepageMultiPing,
     homepageMultiPingTaskIds: settings.homepageMultiPingTaskIds,
+    // 逐节点线路表：不加进这个白名单，站长在设置页保存任何一项时都会被这份 draft 覆盖掉。
+    homepagePingLineTaskIdsByNode: settings.homepagePingLineTaskIdsByNode,
     fakePingForUnbound: settings.fakePingForUnbound,
     pingLatencyThresholds: normalizePingLatencyThresholds(settings.pingLatencyThresholds),
     pingLatencyColors: normalizePingLatencyColors(settings.pingLatencyColors),

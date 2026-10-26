@@ -406,9 +406,9 @@ export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
     if (explicit || available.length === 0) return resolved;
     const tri = resolved.filter((taskId) => CARRIER_TRI_TASK_IDS.includes(taskId));
     if (tri.some((taskId) => available.includes(taskId))) return resolved;
-    const nodes = available.filter(
-      (taskId) => !CARRIER_TRI_TASK_IDS.includes(taskId) && resolved.includes(taskId),
-    );
+    // 不能用 `resolved.includes` 兜底：全局线路表通常只有三网，node_1 压根不在里面，
+    // 那样挑出来的永远是空集。这里直接按「这台实际有数据的 node 槽位」出结果。
+    const nodes = available.filter((taskId) => !CARRIER_TRI_TASK_IDS.includes(taskId));
     if (nodes.length === 0) return resolved;
     return nodes;
   }, [available, explicit, resolved]);

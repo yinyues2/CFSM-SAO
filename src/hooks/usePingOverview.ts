@@ -384,7 +384,6 @@ export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
   } = useThemeSettings();
   const siteOverrides = nodePingLineOverrides(homepagePingLineOverrides, uuid);
   const localOverrides = useNodePingLineOverrides(uuid);
-  const explicit = Object.prototype.hasOwnProperty.call(homepagePingLineTaskIdsByNode, uuid);
   const nodeTaskIds = nodePingTaskIds(
     homepagePingLineTaskIdsByNode,
     uuid,
@@ -398,26 +397,21 @@ export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
       ),
     [nodeTaskIds, localOverrides, siteOverrides],
   );
-  // 站长没有单独给这台配线路表时，按「谁有数据就显示谁」自动收敛一次：三网一条样本都没有、
-  // 而 node_* 有值（典型是只走中转的落地机），卡片就只留那几行，不会再画三行空气。
-  // 有数据的线随时间抖动，所以只在「三网全无 + node 有」这个明确不对称的情况下动手。
-  const available = useAvailablePingTaskIds(uuid);
+  // 只显示这台真正启用的线路：站长把某一路的探测目标填成 `'0'`（或压根没配）时，后端对该槽位
+  // 下发 `false`，这一行就该从卡片上消失，而不是画成一行「—」。
+  const enabledTaskIds = useEnabledPingTaskIds(uuid);
   return useMemo(() => {
-    if (explicit || available.length === 0) return resolved;
-    const tri = resolved.filter((taskId) => CARRIER_TRI_TASK_IDS.includes(taskId));
-    if (tri.some((taskId) => available.includes(taskId))) return resolved;
-    // 不能用 `resolved.includes` 兜底：全局线路表通常只有三网，node_1 压根不在里面，
-    // 那样挑出来的永远是空集。这里直接按「这台实际有数据的 node 槽位」出结果。
-    const nodes = available.filter((taskId) => !CARRIER_TRI_TASK_IDS.includes(taskId));
-    if (nodes.length === 0) return resolved;
-    return nodes;
-  }, [available, explicit, resolved]);
+    if (enabledTaskIds.length === 0) return resolved;
+    const shown = resolved.filter((taskId) => enabledTaskIds.includes(taskId));
+    if (shown.length > 0) return shown;
+    // 站点线路表里的那几路这台都没启用（典型：只走中转的落地机，三网填了 '0'）——
+    // 直接用它真正启用的那几路，顺序按线路表。
+    return enabledTaskIds;
+  }, [enabledTaskIds, resolved]);
 }
 
 const EMPTY_TASK_IDS: readonly number[] = [];
 
-/** 三网 + BD 那四路的 task id（`CARRIER_TASKS` 里 id 1-4），自动收敛时用来区分「大陆探测」和「自定义节点」。 */
-const CARRIER_TRI_TASK_IDS: readonly number[] = [1, 2, 3, 4];
 const availableTaskIdsCache = new WeakMap<object, readonly number[]>();
 
 /**
@@ -442,6 +436,22 @@ export function listAvailablePingTaskIds(
 
 export function useAvailablePingTaskIds(uuid: string, enabled = true): readonly number[] {
   return listAvailablePingTaskIds(usePingSamples(uuid, enabled));
+}
+
+/**
+ * 这台节点**当前启用**的线路：看最新一帧里哪些 `ping_*` 不是 `false`。
+ *
+ * 后端对一个没配探测目标的槽位下发 `false`（→ null），站长把某一路的探测目标填成 `'0'`
+ * 也是同一个结果。这类行画出来只会是「无样本」，所以卡片干脆不显示它。
+ */
+export function useEnabledPingTaskIds(uuid: string, enabled = true): readonly number[] {
+  const samples = usePingSamples(uuid, enabled);
+  return useMemo(() => {
+    const last = samples.length > 0 ? samples[samples.length - 1] : null;
+    if (!last) return EMPTY_TASK_IDS;
+    // 后端对未配置的槽位下发 `false`，schema 统一转成 null；`null` 就是「这一路没启用」。
+    return CARRIER_TASKS.filter((task) => last.ping[task.key] != null).map((task) => task.id);
+  }, [samples]);
 }
 
 /**

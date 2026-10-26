@@ -384,12 +384,13 @@ export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
   } = useThemeSettings();
   const siteOverrides = nodePingLineOverrides(homepagePingLineOverrides, uuid);
   const localOverrides = useNodePingLineOverrides(uuid);
+  const explicit = Object.prototype.hasOwnProperty.call(homepagePingLineTaskIdsByNode, uuid);
   const nodeTaskIds = nodePingTaskIds(
     homepagePingLineTaskIdsByNode,
     uuid,
     homepageMultiPingTaskIds,
   );
-  return useMemo(
+  const resolved = useMemo(
     () =>
       resolveNodePingLineTaskIds(
         resolveNodePingLineTaskIds(nodeTaskIds, siteOverrides),
@@ -397,9 +398,26 @@ export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
       ),
     [nodeTaskIds, localOverrides, siteOverrides],
   );
+  // 站长没有单独给这台配线路表时，按「谁有数据就显示谁」自动收敛一次：三网一条样本都没有、
+  // 而 node_* 有值（典型是只走中转的落地机），卡片就只留那几行，不会再画三行空气。
+  // 有数据的线随时间抖动，所以只在「三网全无 + node 有」这个明确不对称的情况下动手。
+  const available = useAvailablePingTaskIds(uuid);
+  return useMemo(() => {
+    if (explicit || available.length === 0) return resolved;
+    const tri = resolved.filter((taskId) => CARRIER_TRI_TASK_IDS.includes(taskId));
+    if (tri.some((taskId) => available.includes(taskId))) return resolved;
+    const nodes = available.filter(
+      (taskId) => !CARRIER_TRI_TASK_IDS.includes(taskId) && resolved.includes(taskId),
+    );
+    if (nodes.length === 0) return resolved;
+    return nodes;
+  }, [available, explicit, resolved]);
 }
 
 const EMPTY_TASK_IDS: readonly number[] = [];
+
+/** 三网 + BD 那四路的 task id（`CARRIER_TASKS` 里 id 1-4），自动收敛时用来区分「大陆探测」和「自定义节点」。 */
+const CARRIER_TRI_TASK_IDS: readonly number[] = [1, 2, 3, 4];
 const availableTaskIdsCache = new WeakMap<object, readonly number[]>();
 
 /**

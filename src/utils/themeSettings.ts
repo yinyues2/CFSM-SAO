@@ -225,6 +225,8 @@ export interface ResolvedThemeSettings {
   bandwidthRatingLabels: string;
   assetRatingLabels: string;
   compactShowTrafficTotal: boolean;
+  /** 卡片上的流量阈值区块（剩余量文字 + 18 段光柱）。 */
+  showTrafficQuota: boolean;
   compactShowBilling: boolean;
   compactShowUptime: boolean;
   showConnections: boolean;
@@ -281,6 +283,7 @@ export const DEFAULT_THEME_SETTINGS: ResolvedThemeSettings = {
   bandwidthRatingLabels: "",
   assetRatingLabels: "",
   compactShowTrafficTotal: true,
+  showTrafficQuota: true,
   compactShowBilling: true,
   compactShowUptime: true,
   showConnections: false,
@@ -586,6 +589,7 @@ export function normalizeThemeSettings(
     bandwidthRatingLabels: normalizePlainText(settings?.bandwidthRatingLabels),
     assetRatingLabels: normalizePlainText(settings?.assetRatingLabels),
     compactShowTrafficTotal: enabledUnlessFalse(settings?.compactShowTrafficTotal),
+    showTrafficQuota: enabledUnlessFalse(settings?.showTrafficQuota),
     compactShowBilling: enabledUnlessFalse(settings?.compactShowBilling),
     compactShowUptime: enabledUnlessFalse(settings?.compactShowUptime),
     showConnections: settings?.showConnections === true,

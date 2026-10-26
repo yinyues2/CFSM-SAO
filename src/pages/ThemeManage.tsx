@@ -418,6 +418,7 @@ function pickManagedThemeSettings(settings: ResolvedThemeSettings) {
     homepageMultiPingTaskIds: settings.homepageMultiPingTaskIds,
     // 逐节点线路表：不加进这个白名单，站长在设置页保存任何一项时都会被这份 draft 覆盖掉。
     homepagePingLineTaskIdsByNode: settings.homepagePingLineTaskIdsByNode,
+    showTrafficQuota: settings.showTrafficQuota,
     fakePingForUnbound: settings.fakePingForUnbound,
     pingLatencyThresholds: normalizePingLatencyThresholds(settings.pingLatencyThresholds),
     pingLatencyColors: normalizePingLatencyColors(settings.pingLatencyColors),
@@ -2199,6 +2200,13 @@ export function ThemeManage() {
                   title="价格到期"
                   desc="在卡片中显示续费周期、费用和到期日。"
                   checked={draft.showCardPrice}
+                  onPatch={patch}
+                />
+                <ToggleRow
+                  field="showTrafficQuota"
+                  title="流量阈值"
+                  desc="卡片上的剩余流量数字与 18 段流量光柱。"
+                  checked={draft.showTrafficQuota}
                   onPatch={patch}
                 />
                 <ToggleRow

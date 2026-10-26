@@ -136,13 +136,15 @@ export const NodeCard = memo(function NodeCard({
             redrawKey={redrawKey}
           />
 
-          <NodeTrafficQuota
-            litCount={trafficQuotaLitCount(traffic.fraction)}
-            remainingLabel={traffic.remainingLabel}
-            detail={traffic.detail}
-            typeLabel={traffic.typeLabel}
-            segmentColors={trafficSegmentColors}
-          />
+          {themeSettings.showTrafficQuota && (
+            <NodeTrafficQuota
+              litCount={trafficQuotaLitCount(traffic.fraction)}
+              remainingLabel={traffic.remainingLabel}
+              detail={traffic.detail}
+              typeLabel={traffic.typeLabel}
+              segmentColors={trafficSegmentColors}
+            />
+          )}
 
           {showConnections && (
             <div className="card-metric-section server-card-meta-grid">

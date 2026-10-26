@@ -31,6 +31,7 @@ import type {
 } from "@/types/cfsm";
 import {
   nodePingLineOverrides,
+  nodePingTaskIds,
   resolveNodePingLineTaskIds,
   type PingLineOverrides,
   type PingLineOverridesByNode,
@@ -368,23 +369,33 @@ export function useAllPingLineOverrides(): PingLineOverridesByNode {
 }
 
 /**
- * 多线路模式下这台节点实际显示哪几条线路，三层叠：站点的 `homepageMultiPingTaskIds` 打底 →
+ * 多线路模式下这台节点实际显示哪几条线路，三层叠：这台节点自己的线路表
+ * （`homepagePingLineTaskIdsByNode`，没配就退回站点的 `homepageMultiPingTaskIds`）打底 →
  * 站长存到后端的逐节点换线（`homepagePingLineOverrides`）→ 本机在卡片上换过的行
  * （`pingLineOverrideStore`）。取数（上面的 `useNodePingOverviewLines`）和卡片排行
  * （`useNodeCardModel`）必须共用这一份，否则会出现「行上写着电信、画的是联通」。
- * 条数仍由站点设置决定，只能换、不能加减。
+ * 条数由这台节点自己的线路表决定（没单独配就跟站点设置一致）；换线只能改某一行的内容，不改条数。
  */
 export function useNodeMultiPingTaskIds(uuid: string): readonly number[] {
-  const { homepageMultiPingTaskIds, homepagePingLineOverrides } = useThemeSettings();
+  const {
+    homepageMultiPingTaskIds,
+    homepagePingLineOverrides,
+    homepagePingLineTaskIdsByNode,
+  } = useThemeSettings();
   const siteOverrides = nodePingLineOverrides(homepagePingLineOverrides, uuid);
   const localOverrides = useNodePingLineOverrides(uuid);
+  const nodeTaskIds = nodePingTaskIds(
+    homepagePingLineTaskIdsByNode,
+    uuid,
+    homepageMultiPingTaskIds,
+  );
   return useMemo(
     () =>
       resolveNodePingLineTaskIds(
-        resolveNodePingLineTaskIds(homepageMultiPingTaskIds, siteOverrides),
+        resolveNodePingLineTaskIds(nodeTaskIds, siteOverrides),
         localOverrides,
       ),
-    [homepageMultiPingTaskIds, localOverrides, siteOverrides],
+    [nodeTaskIds, localOverrides, siteOverrides],
   );
 }
 

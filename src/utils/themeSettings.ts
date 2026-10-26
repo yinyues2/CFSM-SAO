@@ -33,8 +33,11 @@ import {
 } from "@/utils/pingTasks";
 import {
   EMPTY_PING_LINE_OVERRIDES_BY_NODE,
+  EMPTY_PING_TASK_IDS_BY_NODE,
   normalizePingLineOverridesByNode,
+  normalizePingTaskIdsByNode,
   type PingLineOverridesByNode,
+  type PingTaskIdsByNode,
 } from "@/utils/pingLineOverrides";
 
 export type Appearance = "system" | "light" | "dark";
@@ -188,6 +191,8 @@ export interface ResolvedThemeSettings {
   enableHomepageMultiPing: boolean;
   homepageMultiPingTaskIds: number[];
   homepagePingLineOverrides: PingLineOverridesByNode;
+  /** 逐节点的线路表：没配的节点用 `homepageMultiPingTaskIds`。行数按这台自己的表走。 */
+  homepagePingLineTaskIdsByNode: PingTaskIdsByNode;
   fakePingForUnbound: boolean;
   pingLatencyThresholds: PingLatencyThresholds;
   pingLatencyColors: PingLatencyColors;
@@ -247,6 +252,7 @@ export const DEFAULT_THEME_SETTINGS: ResolvedThemeSettings = {
   enableHomepageMultiPing: true,
   homepageMultiPingTaskIds: [...DEFAULT_HOMEPAGE_MULTI_PING_TASK_IDS],
   homepagePingLineOverrides: EMPTY_PING_LINE_OVERRIDES_BY_NODE,
+  homepagePingLineTaskIdsByNode: EMPTY_PING_TASK_IDS_BY_NODE,
   fakePingForUnbound: false,
   pingLatencyThresholds: DEFAULT_PING_LATENCY_THRESHOLDS,
   pingLatencyColors: DEFAULT_PING_LATENCY_COLORS,
@@ -550,6 +556,9 @@ export function normalizeThemeSettings(
     enableHomepageMultiPing: enabledUnlessFalse(settings?.enableHomepageMultiPing),
     homepageMultiPingTaskIds,
     homepagePingLineOverrides: normalizePingLineOverridesByNode(settings?.homepagePingLineOverrides),
+    homepagePingLineTaskIdsByNode: normalizePingTaskIdsByNode(
+      settings?.homepagePingLineTaskIdsByNode,
+    ),
     fakePingForUnbound: settings?.fakePingForUnbound === true,
     pingLatencyThresholds: normalizePingLatencyThresholds(settings?.pingLatencyThresholds),
     pingLatencyColors: normalizePingLatencyColors(settings?.pingLatencyColors),

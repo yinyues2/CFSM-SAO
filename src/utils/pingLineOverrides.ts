@@ -130,6 +130,53 @@ export function normalizePingLineOverridesByNode(
 }
 
 /**
+ * 每台节点自己的线路表：`{ uuid: [线路 id...] }`。
+ *
+ * 站点设置 `homepageMultiPingTaskIds` 是所有节点的默认行；这份是逐节点的例外。有的机器只走中转、
+ * 三网对它没意义，有的机器本身就是入口、入口行对它没意义 —— 而 `PingLineOverrides` 只能改某一行的
+ * 内容、不能加减行数，所以给一台机器单独定一张表，行数与顺序都以这张表为准。
+ */
+export type PingTaskIdsByNode = Readonly<Record<string, readonly number[]>>;
+
+export const EMPTY_PING_TASK_IDS_BY_NODE: PingTaskIdsByNode = Object.freeze({});
+
+/** 取某台节点的线路表；没单独配就返回站点默认那份（引用不变，可直接进依赖数组）。 */
+export function nodePingTaskIds(
+  byNode: PingTaskIdsByNode,
+  uuid: string,
+  fallback: readonly number[],
+): readonly number[] {
+  const own = Object.prototype.hasOwnProperty.call(byNode, uuid) ? byNode[uuid] : undefined;
+  return own && own.length > 0 ? own : fallback;
+}
+
+/**
+ * 存储里读出来的东西不可信：元素只认正整数、按线路表筛一遍、去重、截到多线路条数上限；
+ * 空表整条丢掉（空表等于「没单独配」，别让它把某台机器的线路清空）。
+ */
+export function normalizePingTaskIdsByNode(
+  value: unknown,
+  isKnownTaskId: (taskId: number) => boolean = () => true,
+): PingTaskIdsByNode {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return EMPTY_PING_TASK_IDS_BY_NODE;
+  }
+  const normalized: Record<string, readonly number[]> = {};
+  for (const [uuid, taskIds] of Object.entries(value)) {
+    if (!uuid || uuid === "__proto__" || !Array.isArray(taskIds)) continue;
+    const ids: number[] = [];
+    for (const raw of taskIds) {
+      if (!isPositiveTaskId(raw) || !isKnownTaskId(raw)) continue;
+      if (ids.includes(raw)) continue;
+      ids.push(raw);
+      if (ids.length >= HOMEPAGE_MULTI_PING_MAX_COUNT) break;
+    }
+    if (ids.length > 0) normalized[uuid] = ids;
+  }
+  return Object.keys(normalized).length > 0 ? normalized : EMPTY_PING_TASK_IDS_BY_NODE;
+}
+
+/**
  * 「保存到后端」时把本机换过的线路并进站点那份，得到要写上去的 `homepagePingLineOverrides`。
  *
  * 按行叠：一行记的是「这一行显示哪条线路」，本机表不管是相对哪份默认算出来的都能直接叠，本机换过的行

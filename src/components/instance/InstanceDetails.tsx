@@ -7,6 +7,7 @@ import {
 } from "@/utils/format";
 import { resolveTrafficUsage } from "@/utils/traffic";
 import { InstancePanel } from "./InstancePanel";
+import { useThemeSettings } from "@/hooks/useThemeSettings";
 
 // Intl.DateTimeFormat 构造开销大，复用一个实例，别每次 metrics 更新都重建
 const TIME_FORMATTER = new Intl.DateTimeFormat("zh-CN", {
@@ -24,6 +25,8 @@ export function InstanceDetails({
 }) {
   const meta = useNodeMeta(uuid);
   const metrics = useNodeMetrics(uuid);
+  // 和卡片上的「流量阈值」共用一个开关：关掉就是整个站点的流量数字都不显示。
+  const { showTrafficQuota } = useThemeSettings();
   const isReady = Boolean(meta && metrics);
 
   useEffect(() => {
@@ -104,25 +107,27 @@ export function InstanceDetails({
           {/* 「今日流量」「峰值速度」已移除：后端没有今日累计字节字段，两者只能由历史瞬时速率
               积分/取极值得出，而历史接口每次固定只返回约 120 个点（区间越长采样越粗），
               数值会随返回的采样点大幅漂移，误导性大于参考价值。 */}
-          <div className="instance-info-item is-stack">
-            <span className="instance-info-label">总流量</span>
-            <div className="instance-info-traffic">
-              <span className="instance-info-value">{`↑ ${formatBytes(metrics.trafficUp)} · ↓ ${formatBytes(metrics.trafficDown)}`}</span>
-              {meta.traffic_limit > 0 && (
-                <>
-                  <div className="instance-progress-track" aria-hidden>
-                    <span
-                      className="instance-progress-fill"
-                      style={{ width: `${trafficUsage.fraction * 100}%` }}
-                    />
-                  </div>
-                  <span className="instance-info-note">
-                    {`${formatBytes(trafficUsage.used)} / ${formatBytes(meta.traffic_limit)}`}
-                  </span>
-                </>
-              )}
+          {showTrafficQuota && (
+            <div className="instance-info-item is-stack">
+              <span className="instance-info-label">总流量</span>
+              <div className="instance-info-traffic">
+                <span className="instance-info-value">{`↑ ${formatBytes(metrics.trafficUp)} · ↓ ${formatBytes(metrics.trafficDown)}`}</span>
+                {meta.traffic_limit > 0 && (
+                  <>
+                    <div className="instance-progress-track" aria-hidden>
+                      <span
+                        className="instance-progress-fill"
+                        style={{ width: `${trafficUsage.fraction * 100}%` }}
+                      />
+                    </div>
+                    <span className="instance-info-note">
+                      {`${formatBytes(trafficUsage.used)} / ${formatBytes(meta.traffic_limit)}`}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </InstancePanel>

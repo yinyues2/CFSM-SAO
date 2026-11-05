@@ -487,6 +487,23 @@ function backfillPingBuffer(serverId: string, rows: HistoryRow[]): void {
   seedMeasuredHistory(serverId, historyRowsToPingSamples(rows));
 }
 
+/**
+ * 首页延迟条的一次性历史回填。
+ *
+ * 首页过去不查历史（逐节点每分钟查会让后端 D1 读行翻几十倍），代价是柱子只由
+ * `/api/servers` 的窗口 + 浏览器本地累积拼出来：
+ * ① 窗口是后端「最近邻向后填充」的产物，连续若干格逐字节相同时会被前端整段丢掉；
+ * ② 本地累积只覆盖标签页开着的那段，切走/挂起就断。
+ * 两者一叠加，卡片就画成断断续续的格子，刷新也救不回来。
+ *
+ * 折中：每次页面加载（以及每 15 分钟、标签页重新可见时）对每台可见节点查一次 2.25 小时
+ * 历史，把真实采样灌进缓冲区。一次会话十几条请求，不是轮询。
+ */
+export async function backfillPingHistory(serverId: string, hours = 2.25): Promise<void> {
+  const rows = await requestHistoryRows(serverId, hours);
+  backfillPingBuffer(serverId, rows);
+}
+
 async function fetchHistoryRows(
   serverId: string,
   hours: number,

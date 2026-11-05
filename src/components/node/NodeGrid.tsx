@@ -28,6 +28,7 @@ import {
   useNodeStoreStatus,
 } from "@/hooks/useNode";
 import { useHomepagePingOverview } from "@/hooks/usePingOverview";
+import { usePingHistoryBackfill } from "@/hooks/usePingHistoryBackfill";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { useThemeSettings } from "@/hooks/useThemeSettings";
 import { useViewMode } from "@/hooks/useViewMode";
@@ -792,6 +793,9 @@ export function NodeGrid() {
       ),
     [me?.logged_in, nodes, hiddenUuids],
   );
+  // 延迟条的历史回填：每台可见节点每 15 分钟补一次真采样，见 usePingHistoryBackfill。
+  const backfillUuids = useMemo(() => visibleNodes.map((node) => node.uuid), [visibleNodes]);
+  usePingHistoryBackfill(backfillUuids);
   // 资产统计与卡片使用同一可见性规则，避免泄露隐藏节点信息。
   const visibleMeta = useMemo(
     () =>

@@ -47,8 +47,9 @@ import type { NodeViewMode } from "@/utils/themeSettings";
 /**
  * 首页延迟数据。
  *
- * 数据来自 `@/services/pingLiveStore` 的实时缓冲区（由 `/api/servers` 与 WebSocket 推送
- * 累积），不查历史接口 —— 逐节点查 `/api/history/all` 会让后端 D1 读行翻几十倍。
+ * 数据来自 `@/services/pingLiveStore` 的实时缓冲区（由 `/api/servers`、WebSocket 推送，
+ * 以及 `usePingHistoryBackfill` 每 15 分钟一次的历史回填累积）。这里自己不查历史接口 ——
+ * 逐节点、按渲染周期查 `/api/history/all` 会让后端 D1 读行翻几十倍。
  * 实例详情页的 Ping 图表仍然读历史，那是用户主动打开、单节点一次的请求。
  */
 

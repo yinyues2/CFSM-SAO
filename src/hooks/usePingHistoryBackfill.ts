@@ -12,8 +12,12 @@ import { backfillPingHistory } from "@/services/api";
  * 同一台节点 15 分钟内不重复请求；页面不可见时完全不发请求。一次会话十几条请求，不是轮询。
  */
 
-/** 与后端首页窗口（约 2 小时）对齐，多给一点余量。 */
-const BACKFILL_HOURS = 2.25;
+/**
+ * 回填窗口。**只能取后端 `ALLOWED_HISTORY_HOURS` 里的值**（0.167 / 0.5 / 1 / 6 / 12 / 24），
+ * 传 2.25、2、3 一律 `400 Invalid hours parameter`（实测）。取 6 小时：接口按 120 点降采样
+ * ≈ 3 分钟一个点，缓冲区按 SAMPLE_TTL（2h15m）裁完仍覆盖首页整段窗口。
+ */
+const BACKFILL_HOURS = 6;
 /** 同一台节点的最短重查间隔。 */
 const BACKFILL_TTL_MS = 15 * 60 * 1000;
 /** 列表里的相邻两条请求之间的间隔，避免一次打十几个并发。 */

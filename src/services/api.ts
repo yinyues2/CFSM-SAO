@@ -496,10 +496,12 @@ function backfillPingBuffer(serverId: string, rows: HistoryRow[]): void {
  * ② 本地累积只覆盖标签页开着的那段，切走/挂起就断。
  * 两者一叠加，卡片就画成断断续续的格子，刷新也救不回来。
  *
- * 折中：每次页面加载（以及每 15 分钟、标签页重新可见时）对每台可见节点查一次 2.25 小时
- * 历史，把真实采样灌进缓冲区。一次会话十几条请求，不是轮询。
+ * 折中：每次页面加载（以及每 15 分钟、标签页重新可见时）对每台可见节点查一次历史，
+ * 把真实采样灌进缓冲区。一次会话十几条请求，不是轮询。
+ *
+ * `hours` 只能取后端允许的值（0.167 / 0.5 / 1 / 6 / 12 / 24），其余一律 400。
  */
-export async function backfillPingHistory(serverId: string, hours = 2.25): Promise<void> {
+export async function backfillPingHistory(serverId: string, hours = 6): Promise<void> {
   const rows = await requestHistoryRows(serverId, hours);
   backfillPingBuffer(serverId, rows);
 }
